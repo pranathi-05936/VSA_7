@@ -18,12 +18,11 @@ in your cart.
 | Testing           | Node's built-in test runner — zero dependencies          |
 | Server            | Node.js + Express (static file server, for Docker)       |
 | Container         | Docker (multi-stage) + Docker Compose                    |
-| CI                | GitHub Actions — Docker image to GHCR, static site to Pages |
+| CI                | GitHub Actions                                           |
+| Deployment        | Vercel                                                   |
 
-No database, no API keys, no LLM calls — the NLP is a fast, free, offline-capable rule
-engine, not an API round-trip. The product catalog, purchase history, and stock status
-are mocked in-memory.
-
+No database, no API keys, and no LLM calls are required. The NLP is implemented as a
+fast, rule-based local engine without an external NLP API.
 ---
 
 ## Testing
@@ -61,7 +60,7 @@ regression in the fuzzy matcher itself. See `tests/nlp.test.js`.
 
 ```bash
 git clone https://github.com/pranathi-05936/VSA_7.git
-cd voice-shopping-assistant
+cd VSA_7
 npm install
 ```
 
@@ -92,23 +91,35 @@ docker build -t voice-shopping-assistant .
 docker run -p 3000:3000 voice-shopping-assistant
 ```
 
-### Production deployment (Render/Railway/Fly.io)
-
-The same `Dockerfile` works on any Docker-compatible host:
-
-1. Push your image to GHCR (automatically via the GitHub Actions workflow on push to `main`)
-2. On Render/Railway, create a new Web Service → Docker → point to your GHCR image
-3. No environment variables are required — the app is fully static/client-side
 
 ---
+## ☁️ Production Deployment
+
+The application is deployed on **Vercel**.
+
+### Deployment
+
+The project is connected to GitHub and deployed through Vercel. Every new push to the `main` branch can trigger a new production deployment automatically.
+
+### Production App
+
+🌐 **Live Application →** https://vsa-7.vercel.app/
+
+### GitHub Repository
+
+💻 **Source Code →** https://github.com/pranathi-05936/VSA_7
+
+### Docker Support
+
+The project also includes a `Dockerfile` and `docker-compose.yml` for containerized
+local execution. Docker is provided as an optional way to run the application locally.
 
 ## Project Structure
 
 ```
 .
 ├── .github/workflows/
-│   ├── docker-publish.yml     # CI: build + push Docker image to GHCR
-│   └── pages-deploy.yml       # CI: deploy public/ to GitHub Pages (live URL)
+│   ├── docker-publish.yml     # CI: automated Docker image build
 ├── public/
 │   ├── index.html             # UI, state, speech recognition, rendering
 │   └── js/nlp.js              # standalone NLP engine — catalog, parsing, matching
@@ -167,5 +178,5 @@ buried inside a single HTML file's inline script.
 | Visual feedback / loading states      | ✅      |
 | Error handling                        | ✅      |
 | Dockerfile + docker-compose           | ✅      |
-| GitHub Actions (GHCR push)            | ✅      |
+| GitHub Actions                         | ✅      |
 | README + approach write-up            | ✅      |
