@@ -45,18 +45,11 @@ regression in the fuzzy matcher itself. See `tests/nlp.test.js`.
 
 ---
 
-## Live URL
+## 🌐 Live Application
 
-`.github/workflows/pages-deploy.yml` deploys `public/` to GitHub Pages automatically on
-every push to `main`. After your first push:
+**Live Demo:** https://vsa-7.vercel.app/
 
-1. Go to your repo's **Settings → Pages**
-2. Under "Build and deployment", set **Source** to "GitHub Actions" (if not already)
-3. Your live URL will be https://vsa-7.vercel.app/
-
-No server, no hosting cost, no manual deploy step.
-
----
+**GitHub Repository:** https://github.com/pranathi-05936/VSA_7
 
 ## Local Setup
 
