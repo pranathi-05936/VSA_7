@@ -5,8 +5,6 @@ remove, modify, and search items in English, Hindi, or Telugu — the app parses
 command, categorizes the item, and surfaces suggestions that actually adapt to what's
 in your cart.
 
-**Live demo:** deployed automatically to GitHub Pages on every push to `main` — see
-[Live URL](#live-url) below.
 
 ---
 
