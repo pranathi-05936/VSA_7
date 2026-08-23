@@ -1,4 +1,3 @@
-
 Approach
 
 I built this as a dependency-free static app: an Express server only wraps it for Docker/hosting — the app itself is vanilla HTML/CSS/JS, no framework, no LLM API calls.
