@@ -1,15 +1,16 @@
-# Approach
 
-Voice Shopping Assistant is engineered as a voice-first shopping intelligence system that transforms natural speech into structured shopping actions.
+Approach
 
-**1. Voice → Intent:** The browser's Web Speech API captures commands in English, Hindi, and Telugu. A custom NLP engine normalizes speech, identifies intent, and extracts entities such as products, quantities, brands, sizes, and price limits.
+I built this as a dependency-free static app: an Express server only wraps it for Docker/hosting — the app itself is vanilla HTML/CSS/JS, no framework, no LLM API calls.
 
-**2. Intelligent Product Understanding:** The engine combines exact matching, category matching, and fuzzy matching to handle natural phrasing and minor speech-recognition errors. For example, “find me fruits” resolves to relevant products such as apples, bananas, oranges, grapes, mangoes, and guavas.
+**NLP:** The parsing engine lives in its own module (`public/js/nlp.js`), separate from the UI, with a 34-test automated suite (`npm test`, Node's built-in runner, zero install). It's order-independent — trigger words are found anywhere in a sentence rather than requiring a fixed structure — with a fuzzy edit-distance fallback for typos and ASR mishearings, word-boundary-safe matching (avoiding false substring hits), and explicit Unicode normalization for Hindi/Telugu (stripping the zero-width joiners speech recognition often inserts). Verb *stems*, not just dictionary roots, cover conjugated/polite forms in Hindi and Telugu.
 
-**3. Adaptive List Management:** Add, remove, and quantity-modification commands update the shopping list dynamically. Products are automatically organized into meaningful categories for easier management.
+**Catalog:** 110 items across 9 categories, with 55+ branded SKUs generated from a data table (one line adds a new brand everywhere), fruit/vegetable subcategorization, and size parsing distinct from quantity ("1 liter milk").
 
-**4. Context-Aware Recommendations:** Suggestions are driven by the user's current cart, simulated purchase history, seasonal availability, and product relationships. Substitute products are surfaced when relevant.
+**Suggestions:** Three adaptive tiers — pairing/alternatives react to the actual cart contents (not a fixed list), seasonal combines calendar season with on-sale flags.
 
-**5. Search Intelligence:** Natural-language searches can combine product, category, brand, size, and price constraints, enabling commands such as “find organic apples” or “find toothpaste under ₹200.”
+**Search & UI:** Voice-activated search supports brand, size, and price-range filtering, plus category-level queries ("find me fruits") and superlative selection ("cheapest toothpaste"). The interface is mobile-first and voice-primary, with a text fallback for accessibility.
 
-**6. User Experience & Deployment:** A responsive interface provides immediate visual feedback, confirmations, and error handling, with text input as a fallback. The application is deployed on Vercel, while GitHub maintains the source code, automated tests, Docker configuration, and documentation.
+**Deployment:** Dockerized (multi-stage build) with CI to GHCR, plus a GitHub Actions workflow that auto-deploys the static site to GitHub Pages on every push — a live URL with no manual hosting step.
+
+**Trade-off:** catalog and history are mocked in-memory; production would swap these for a real inventory API.
