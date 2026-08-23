@@ -52,7 +52,7 @@ every push to `main`. After your first push:
 
 1. Go to your repo's **Settings → Pages**
 2. Under "Build and deployment", set **Source** to "GitHub Actions" (if not already)
-3. Your live URL will be `https://<pranathi-05936>.github.io/voice-shopping-assistant/`
+3. Your live URL will be `https://pranathi-05936.github.io/voice-shopping-assistant/`
 
 No server, no hosting cost, no manual deploy step.
 
