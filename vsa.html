@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voice Shopping Assistant</title>
+<meta name="description" content="Say what you need. It builds and organizes your shopping list by voice." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1B241E;
+    --surface:#222E27;
+    --surface-raised:#28362F;
+    --paper:#F4EEDC;
+    --paper-line:#DCD0A9;
+    --ink:#26261F;
+    --ink-soft:#5C5A48;
+    --text:#EFEAE0;
+    --text-dim:#A9B3A6;
+    --border:#374338;
+    --green:#8FBB4E;
+    --green-deep:#5C8232;
+    --citrus:#F2A93B;
+    --citrus-deep:#8C5F16;
+    --tomato:#E0664A;
+    --tomato-deep:#8C3220;
+    --radius:10px;
+    --shadow:0 8px 24px rgba(0,0,0,0.28);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .app{
+    width:100%;
+    max-width:460px;
+  }
+  a{color:inherit;}
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .wordmark{
+    font-family:'Fraunces',serif;
+    font-optical-sizing:auto;
+    font-weight:600;
+    font-size:21px;
+    letter-spacing:-0.01em;
+  }
+  .wordmark span{color:var(--green);}
+  .lang-picker{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .lang-picker-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--text-dim);
+    font-weight:600;
+  }
+  select#lang{
+    background:var(--surface);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:6px 10px;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  /* ---------- Hero / mic ---------- */
+  .hero{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:18px 0 26px;
+  }
+  .mic-btn{
+    position:relative;
+    width:96px;
+    height:96px;
+    border-radius:50%;
+    border:none;
+    background:var(--green);
+    color:#16210F;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform .15s ease, background .2s ease;
+  }
+  .mic-btn:hover{transform:scale(1.03);}
+  .mic-btn:active{transform:scale(0.97);}
+  .mic-btn:focus-visible{outline:3px solid var(--citrus); outline-offset:4px;}
+  .mic-btn.listening{background:var(--tomato); color:#3A160D;}
+  .mic-btn svg{width:34px;height:34px;}
+  .mic-ring{
+    position:absolute;
+    inset:-10px;
+    border-radius:50%;
+    border:2px solid var(--tomato);
+    opacity:0;
+  }
+  .mic-btn.listening .mic-ring{
+    animation:pulse 1.4s ease-out infinite;
+  }
+  @keyframes pulse{
+    0%{opacity:.7; transform:scale(0.85);}
+    100%{opacity:0; transform:scale(1.35);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .mic-btn.listening .mic-ring{animation:none; opacity:.4;}
+  }
+  .hero-caption{
+    margin-top:14px;
+    font-size:14px;
+    color:var(--text-dim);
+    text-align:center;
+    min-height:20px;
+  }
+  .hero-caption.live{color:var(--citrus); font-weight:500;}
+
+  .fallback-label{
+    font-size:11px;
+    color:var(--text-dim);
+    text-align:center;
+    margin:14px 0 6px;
+  }
+  .fallback-form{
+    display:flex;
+    gap:8px;
+    width:100%;
+    opacity:0.85;
+  }
+  .fallback-form input[type=text]{
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    border-radius:8px;
+    padding:7px 10px;
+    font-size:12.5px;
+    font-family:inherit;
+  }
+  .fallback-form input[type=text]:focus-visible{outline:2px solid var(--citrus); color:var(--text);}
+  .fallback-form button{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    font-weight:600;
+    border-radius:8px;
+    padding:0 14px;
+    cursor:pointer;
+    font-size:14px;
+  }
+
+  .banner{
+    font-size:13px;
+    padding:10px 12px;
+    border-radius:8px;
+    margin-top:14px;
+    line-height:1.45;
+  }
+  .banner.error{background:rgba(224,102,74,0.15); color:#F3B4A4; border:1px solid rgba(224,102,74,0.35);}
+  .banner.info{background:rgba(143,187,78,0.12); color:#C4DE9C; border:1px solid rgba(143,187,78,0.3);}
+
+  /* ---------- Suggestions ---------- */
+  .section-label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--text-dim);
+    margin:0 0 10px 2px;
+    font-weight:600;
+  }
+  .suggestion-group{ margin-bottom:16px; }
+  .suggestions-empty{ font-size:13px; color:var(--text-dim); padding:8px 2px; }
+  .suggestion-group-label{
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-dim);
+    margin:0 0 8px 2px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .suggestions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .chip{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--surface-raised);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:8px 14px 8px 10px;
+    font-size:13px;
+    cursor:pointer;
+    color:var(--text);
+  }
+  .chip:hover{border-color:var(--citrus);}
+  .chip .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;}
+  .chip.seasonal .dot{background:var(--green);}
+  .chip.lowstock .dot{background:var(--citrus);}
+  .chip.substitute .dot{background:var(--tomato);}
+  .chip.popular .dot{background:var(--text-dim);}
+  .chip.pairing .dot{background:var(--citrus-deep);}
+
+  /* ---------- Receipt list ---------- */
+  .receipt-wrap{
+    margin-top:18px;
+    filter:drop-shadow(var(--shadow));
+  }
+  .receipt{
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:4px 4px 0 0;
+    padding:22px 20px 16px;
+  }
+  .receipt-head{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    border-bottom:1px dashed var(--paper-line);
+    padding-bottom:12px;
+    margin-bottom:8px;
+  }
+  .receipt-head strong{display:block; font-family:'Fraunces',serif; font-size:16px; letter-spacing:0; text-transform:none; color:var(--ink); margin-bottom:2px; font-weight:600;}
+  .category-group{margin-top:12px;}
+  .category-name{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .item-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:6px 0;
+    border-bottom:1px dotted var(--paper-line);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13.5px;
+  }
+  .item-row:last-child{border-bottom:none;}
+  .item-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .item-qty{color:var(--ink-soft); margin:0 10px;}
+  .item-remove{
+    background:none;
+    border:none;
+    color:var(--tomato-deep);
+    cursor:pointer;
+    font-size:15px;
+    line-height:1;
+    padding:4px;
+    border-radius:4px;
+  }
+  .item-remove:hover{background:rgba(224,102,74,0.15);}
+  .item-remove:focus-visible{outline:2px solid var(--tomato-deep);}
+  .empty-list{
+    text-align:center;
+    padding:26px 10px 18px;
+    color:var(--ink-soft);
+    font-size:13.5px;
+  }
+  .receipt-foot{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    border-top:1px dashed var(--paper-line);
+    margin-top:14px;
+    padding-top:10px;
+  }
+  .torn-edge{
+    height:14px;
+    background:
+      linear-gradient(-45deg, var(--paper) 8px, transparent 0),
+      linear-gradient(45deg, var(--paper) 8px, transparent 0);
+    background-size:16px 16px;
+    background-position:left bottom;
+    background-repeat:repeat-x;
+  }
+
+  /* ---------- Search results ---------- */
+  .search-panel{
+    margin-top:16px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px 16px;
+  }
+  .search-panel-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .search-panel-head h3{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:15px;
+    margin:0;
+  }
+  .search-panel-head button{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    cursor:pointer;
+    font-size:13px;
+  }
+  .result-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 0;
+    border-bottom:1px solid var(--border);
+    font-size:13.5px;
+  }
+  .result-row:last-child{border-bottom:none;}
+  .result-meta{color:var(--text-dim); font-size:12px;}
+  .result-count{color:var(--text-dim); font-size:12px; text-align:center; padding-top:10px; border-top:1px solid var(--border); margin-top:4px;}
+  .result-row button{
+    background:var(--surface-raised);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:6px;
+    padding:5px 10px;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .result-row button:hover{border-color:var(--green);}
+
+  footer{
+    margin-top:26px;
+    text-align:center;
+    font-size:12px;
+    color:var(--text-dim);
+  }
+  .sr-only{
+    position:absolute; width:1px; height:1px;
+    padding:0; margin:-1px; overflow:hidden;
+    clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="wordmark">Voice Shopping Assistant</div>
+    <div class="lang-picker">
+      <label for="lang" class="lang-picker-label">Language</label>
+      <select id="lang" aria-label="Voice recognition language">
+        <option value="en-US">English</option>
+        <option value="hi-IN">हिन्दी</option>
+        <option value="te-IN">తెలుగు</option>
+        <option value="es-ES">Español</option>
+        <option value="fr-FR">Français</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-label="Voice control">
+      <button id="micBtn" class="mic-btn" aria-pressed="false" aria-label="Start voice command">
+        <span class="mic-ring" aria-hidden="true"></span>
+        <svg id="micIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+      </button>
+      <p id="caption" class="hero-caption">Tap and say it, in any phrasing or language — try "we need milk" or "doodh chahiye".</p>
+
+      <p class="fallback-label">Or, if you can't use voice right now:</p>
+      <form id="fallbackForm" class="fallback-form">
+        <label for="fallbackInput" class="sr-only">Type a command instead</label>
+        <input type="text" id="fallbackInput" placeholder="Add, remove, or change quantity — e.g. change milk to 3" autocomplete="off" />
+        <button type="submit">Go</button>
+      </form>
+
+      <div id="banner"></div>
+    </section>
+
+    <section aria-label="Suggestions" id="suggestionsSection">
+      <div class="suggestion-group" id="groupShopping" hidden>
+        <p class="suggestion-group-label">&#x1F6D2; Based on your shopping</p>
+        <div class="suggestions" id="suggestionsShopping"></div>
+      </div>
+      <div class="suggestion-group" id="groupSeasonal" hidden>
+        <p class="suggestion-group-label">&#x1F331; Seasonal picks</p>
+        <div class="suggestions" id="suggestionsSeasonal"></div>
+      </div>
+      <div class="suggestion-group" id="groupAlternative" hidden>
+        <p class="suggestion-group-label">&#x1F504; Alternatives</p>
+        <div class="suggestions" id="suggestionsAlternative"></div>
+      </div>
+      <p id="suggestionsEmpty" class="suggestions-empty" hidden>No suggestions right now &mdash; your list looks fresh.</p>
+    </section>
+
+    <div id="searchPanel"></div>
+
+    <section class="receipt-wrap" aria-label="Shopping list">
+      <div class="receipt">
+        <div class="receipt-head">
+          <strong>Your list</strong>
+          say "remove milk" to cross it off
+        </div>
+        <div id="listBody"></div>
+      </div>
+      <div class="torn-edge" aria-hidden="true"></div>
+    </section>
+  </main>
+
+  <footer>Voice runs locally in your browser. Nothing is uploaded.</footer>
+</div>
+
+<script>
+/**
+ * Voice Shopping Assistant — NLP engine.
+ *
+ * Pulled out of the page into its own module for two reasons:
+ *  1. It's the part of this project that actually does something
+ *     interesting — catalog matching, multilingual trigger detection,
+ *     fuzzy typo tolerance, size/quantity extraction — and it deserves
+ *     to be testable on its own, not buried in a <script> tag.
+ *  2. It lets tests/nlp.test.js exercise this exact code (not a copy)
+ *     from Node, with zero build step, via the UMD export at the bottom.
+ *
+ * Everything in here is pure logic: no DOM access, no speech APIs, no
+ * rendering. index.html loads this file with a plain <script> tag and
+ * uses window.VoiceShoppingNLP; tests/nlp.test.js requires() it directly.
+ */
+(function(root, factory){
+  if(typeof module === 'object' && module.exports){
+    module.exports = factory();
+  } else {
+    root.VoiceShoppingNLP = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function(){
+  "use strict";
+
+  /* ===================== Data ===================== */
+
+  /* Aliases include English plus common Hindi, Telugu, Spanish, and French terms
+     (transliterated and native script) so a catalog match works regardless of
+     which language the command was spoken in. */
+  var CATALOG = [
+    {id:'milk', name:'Milk', category:'Dairy', price:3.50, aliases:['milk','doodh','दूध','मिल्क','paalu','పాలు','మిల్క్','leche','lait'], substitutes:['almond-milk','oat-milk']},
+    {id:'almond-milk', name:'Almond milk', category:'Dairy', price:4.20, aliases:['almond milk','बादाम का दूध','बादाम दूध','బాదం పాలు','leche de almendras','lait d\'amande']},
+    {id:'oat-milk', name:'Oat milk', category:'Dairy', price:4.50, aliases:['oat milk','ओट्स का दूध','ఓట్స్ పాలు','leche de avena','lait d\'avoine']},
+    {id:'butter', name:'Butter', category:'Dairy', price:4.00, aliases:['butter','makhan','मक्खन','venna','వెన్న','mantequilla','beurre']},
+    {id:'cheese', name:'Cheese', category:'Dairy', price:5.50, aliases:['cheese','paneer','पनीर','queso','fromage']},
+    {id:'eggs', name:'Eggs', category:'Dairy', price:3.00, aliases:['eggs','egg','ande','अंडे','guddu','గుడ్డు','huevos','oeufs','œufs']},
+    {id:'bread', name:'Bread', category:'Bakery', price:2.80, aliases:['bread','ब्रेड','బ్రెడ్','pan','pain']},
+    {id:'bagels', name:'Bagels', category:'Bakery', price:3.20, aliases:['bagels','bagel']},
+    {id:'apples', name:'Apples', category:'Produce', subcategory:'Fruit', price:0.60, season:['fall','winter'], aliases:['apples','apple','seb','सेब','apple','ఆపిల్','manzanas','manzana','pommes','pomme'], substitutes:['pears']},
+    {id:'organic-apples', name:'Organic apples', category:'Produce', subcategory:'Fruit', price:1.10, aliases:['organic apples']},
+    {id:'pears', name:'Pears', category:'Produce', subcategory:'Fruit', price:0.80, aliases:['pears','pear','nashpati','नाशपाती','pera','poire']},
+    {id:'bananas', name:'Bananas', category:'Produce', subcategory:'Fruit', price:0.30, aliases:['bananas','banana','kele','केले','arati pandu','అరటిపండు','plátanos','platanos','bananes']},
+    {id:'strawberries', name:'Strawberries', category:'Produce', subcategory:'Fruit', price:3.50, season:['spring','summer'], aliases:['strawberries','strawberry','स्ट्रॉबेरी','స్ట్రాబెర్రీ','fresa','fraise']},
+    {id:'oranges', name:'Oranges', category:'Produce', subcategory:'Fruit', price:0.70, season:['winter'], aliases:['oranges','orange','आरेंज','संतरा','ఆరెంజ్','నారింజ','naranja'], outOfStock:true, substitutes:['organic-apples','bananas']},
+    {id:'mango', name:'Mango', category:'Produce', subcategory:'Fruit', price:1.20, season:['summer'], aliases:['mango','mangoes','aam','आम','mamidi','మామిడి','mango']},
+    {id:'grapes', name:'Grapes', category:'Produce', subcategory:'Fruit', price:2.20, season:['summer','fall'], aliases:['grapes','grape','angoor','अंगूर','draksha','ద్రాక్ష','uvas','raisin']},
+    {id:'guava', name:'Guava', category:'Produce', subcategory:'Fruit', price:0.90, onSale:true, aliases:['guava','amrud','अमरूद','jama','జామ','guayaba','goyave']},
+    {id:'watermelon', name:'Watermelon', category:'Produce', subcategory:'Fruit', price:1.50, season:['summer'], aliases:['watermelon','tarbooj','तरबूज','puccakaya','పుచ్చకాయ','sandía','sandia','pastèque']},
+    {id:'onion', name:'Onion', category:'Produce', subcategory:'Vegetable', price:0.50, aliases:['onion','onions','pyaz','प्याज','ullipaya','ఉల్లిపాయ','cebolla','oignon']},
+    {id:'tomato', name:'Tomato', category:'Produce', subcategory:'Vegetable', price:0.55, aliases:['tomato','tomatoes','tamatar','टमाटर','tomato','టమాటా','tomate']},
+    {id:'potato', name:'Potato', category:'Produce', subcategory:'Vegetable', price:0.45, aliases:['potato','potatoes','aloo','आलू','bangaladumpa','బంగాళదుంప','patata','papa','pomme de terre']},
+    {id:'toothpaste', name:'Toothpaste', category:'Personal care', price:3.99, brand:'Store brand', aliases:['toothpaste','टूथपेस्ट','టూత్‌పేస్ట్','pasta de dientes','dentifrice']},
+    {id:'paper-towels', name:'Paper towels', category:'Household', price:6.50, aliases:['paper towels','papel toalla','essuie-tout']},
+    {id:'water', name:'Water', category:'Beverages', price:1.00, aliases:['water','bottled water','paani','पानी','neellu','నీళ్ళు','agua','eau']},
+    {id:'coffee', name:'Coffee', category:'Beverages', price:8.00, brand:'Store brand', aliases:['coffee','कॉफ़ी','కాఫీ','café','cafe']},
+    {id:'tea', name:'Tea', category:'Beverages', price:2.20, brand:'Store brand', aliases:['tea','chai','चाय','టీ','té','the','thé']},
+    {id:'chips', name:'Chips', category:'Snacks', price:2.50, brand:'Store brand', aliases:['chips','papas fritas']},
+    {id:'biscuits', name:'Biscuits', category:'Snacks', price:1.20, brand:'Store brand', aliases:['biscuits','biscuit','बिस्कुट','బిస్కెట్','galletas']},
+    {id:'noodles', name:'Noodles', category:'Pantry', price:1.10, brand:'Store brand', aliases:['noodles','नूडल्स','నూడుల్స్','fideos','nouilles']},
+    {id:'pasta', name:'Pasta', category:'Pantry', price:1.80, aliases:['pasta']},
+    {id:'rice', name:'Rice', category:'Pantry', price:2.20, brand:'Store brand', aliases:['rice','chawal','चावल','biyyam','బియ్యం','arroz','riz']},
+    {id:'sugar', name:'Sugar', category:'Pantry', price:1.60, brand:'Store brand', aliases:['sugar','cheeni','चीनी','panchadara','పంచదార','azúcar','azucar','sucre']},
+    {id:'salt', name:'Salt', category:'Pantry', price:0.80, aliases:['salt','namak','नमक','uppu','ఉప్పు','sal','sel']},
+    {id:'oil', name:'Cooking oil', category:'Pantry', price:3.20, brand:'Store brand', aliases:['oil','cooking oil','tel','तेल','noone','నూనె','aceite','huile']},
+    {id:'ghee', name:'Ghee', category:'Pantry', price:6.00, aliases:['ghee','घी','నెయ్యి','neyyi']},
+    {id:'dal', name:'Dal', category:'Pantry', price:2.40, aliases:['dal','daal','दाल','pappu','పప్పు','lentils']},
+    {id:'atta', name:'Wheat flour', category:'Pantry', price:2.60, brand:'Store brand', onSale:true, aliases:['atta','wheat flour','आटा','pindi','పిండి','harina']},
+    {id:'besan', name:'Gram flour', category:'Pantry', price:2.30, aliases:['besan','gram flour','बेसन','శనగపిండి']},
+    {id:'oats', name:'Oats', category:'Pantry', price:2.80, aliases:['oats','ओट्स','ఓట్స్','avena']},
+    {id:'cereal', name:'Cereal', category:'Pantry', price:3.40, brand:'Store brand', aliases:['cereal','cornflakes','कॉर्नफ्लेक्स','కార్న్‌ఫ్లేక్స్','cereales']},
+    {id:'honey', name:'Honey', category:'Pantry', price:4.80, aliases:['honey','shahad','शहद','తేనె','miel']},
+    {id:'jam', name:'Jam', category:'Pantry', price:2.90, aliases:['jam','मुरब्बा','జామ్','mermelada','confiture']},
+    {id:'ketchup', name:'Ketchup', category:'Pantry', price:2.10, aliases:['ketchup','sauce tomate']},
+    {id:'curd', name:'Curd', category:'Dairy', price:1.80, aliases:['curd','yogurt','yoghurt','dahi','दही','perugu','పెరుగు','yogur']},
+    {id:'buttermilk', name:'Buttermilk', category:'Dairy', price:1.20, aliases:['buttermilk','chaas','छाछ','majjiga','మజ్జిగ']},
+    {id:'soap', name:'Soap', category:'Personal care', price:1.50, brand:'Store brand', aliases:['soap','sabun','साबुन','sabbu','సబ్బు','jabón','jabon','savon']},
+    {id:'shampoo', name:'Shampoo', category:'Personal care', price:4.50, brand:'Store brand', aliases:['shampoo','शैम्पू','షాంపూ','champú','champu','shampooing']},
+    {id:'handwash', name:'Hand wash', category:'Personal care', price:2.40, aliases:['hand wash','handwash','हैंडवॉश']},
+    {id:'deodorant', name:'Deodorant', category:'Personal care', price:3.80, aliases:['deodorant','deo','डिओडोरेंट','desodorante']},
+    {id:'detergent', name:'Detergent', category:'Household', price:5.50, brand:'Store brand', aliases:['detergent','washing powder','डिटर्जेंट','వాషింగ్ పౌడర్','detergente','détergent']},
+    {id:'dishwash', name:'Dish soap', category:'Household', price:2.20, aliases:['dish soap','dishwash','बर्तन साबुन','గిన్నెల సబ్బు']},
+    {id:'tissue', name:'Tissues', category:'Household', price:1.90, aliases:['tissues','tissue paper','टिशू','టిష్యూ','pañuelos']},
+    {id:'garbage-bags', name:'Garbage bags', category:'Household', price:2.60, aliases:['garbage bags','trash bags','कूड़े के थैले']}
+  ];
+
+  /* Sizes for display in search results ("1kg", "500ml") — a real
+     product attribute per the spec ("brand, size, or price range"), kept
+     as a lookup table rather than bloating every catalog line. */
+  var DEFAULT_SIZES = {
+    milk:'1L', 'almond-milk':'1L', 'oat-milk':'1L', water:'500ml', rice:'1kg', oil:'1L',
+    sugar:'1kg', atta:'5kg', toothpaste:'100g', chips:'150g', biscuits:'200g', tea:'250g',
+    coffee:'200g', ghee:'500g', dal:'1kg', salt:'1kg', detergent:'1kg', shampoo:'200ml',
+    soap:'100g', noodles:'70g', pasta:'500g', cereal:'300g', honey:'250g', jam:'200g',
+    ketchup:'500g', curd:'400g', buttermilk:'500ml', besan:'500g', oats:'500g',
+    handwash:'250ml', deodorant:'150ml', dishwash:'500ml', tissue:'100 sheets',
+    'garbage-bags':'30 bags', 'paper-towels':'2 rolls', cheese:'200g', butter:'100g',
+    eggs:'6 pcs', bread:'400g', bagels:'4 pcs', apples:'1kg', 'organic-apples':'1kg',
+    pears:'1kg', bananas:'1kg', strawberries:'250g', oranges:'1kg', onion:'1kg',
+    tomato:'1kg', potato:'1kg'
+  };
+  CATALOG.forEach(function(p){
+    if(!p.defaultSize && DEFAULT_SIZES[p.id]) p.defaultSize = DEFAULT_SIZES[p.id];
+  });
+
+  /* Available size variants for display in search results ("Sizes: 500ml, 1L")
+     — items not listed here just show their single defaultSize. */
+  var SIZE_OPTIONS = {
+    milk:['500ml','1L'], butter:['500ml','1L'], water:['500ml','1L','2L'],
+    rice:['1kg','5kg'], oil:['500ml','1L'], atta:['1kg','5kg'],
+    sugar:['500g','1kg'], detergent:['500g','1kg'], shampoo:['100ml','200ml'],
+    tea:['100g','250g'], coffee:['50g','200g']
+  };
+  CATALOG.forEach(function(p){
+    var key = p.baseId || p.id;
+    if(!p.sizes && SIZE_OPTIONS[key]) p.sizes = SIZE_OPTIONS[key];
+  });
+
+  /* Brand catalog: rather than hand-writing a near-duplicate object for
+     every brand of every product (which doesn't scale and is easy to get
+     inconsistent), each entry here just names a base item + a brand +
+     that brand's price. The generation loop right after builds the full
+     product objects and aliases from this table, so adding a new brand
+     anywhere in the catalog is a one-line addition. */
+  var BRAND_VARIANTS = [
+    {baseId:'toothpaste', brand:'Colgate', price:4.50},
+    {baseId:'toothpaste', brand:'Sensodyne', price:6.80},
+    {baseId:'toothpaste', brand:'Pepsodent', price:3.80},
+    {baseId:'coffee', brand:'Nescafé', price:9.50},
+    {baseId:'coffee', brand:'Bru', price:7.80},
+    {baseId:'tea', brand:'Tata Tea', price:3.00},
+    {baseId:'tea', brand:'Red Label', price:2.80},
+    {baseId:'chips', brand:'Lays', price:3.20},
+    {baseId:'chips', brand:'Pringles', price:4.90},
+    {baseId:'biscuits', brand:'Britannia', price:1.60},
+    {baseId:'biscuits', brand:'Parle-G', price:1.00},
+    {baseId:'noodles', brand:'Maggi', price:1.30},
+    {baseId:'noodles', brand:'Yippee', price:1.20},
+    {baseId:'rice', brand:'India Gate', price:3.50},
+    {baseId:'rice', brand:'Fortune', price:3.20},
+    {baseId:'oil', brand:'Fortune', price:4.50},
+    {baseId:'oil', brand:'Saffola', price:5.20},
+    {baseId:'sugar', brand:'Madhur', price:1.90},
+    {baseId:'atta', brand:'Aashirvaad', price:3.10},
+    {baseId:'cereal', brand:'Kellogg\'s', price:4.60},
+    {baseId:'soap', brand:'Dove', price:2.50},
+    {baseId:'soap', brand:'Lifebuoy', price:1.80},
+    {baseId:'shampoo', brand:'Head & Shoulders', price:5.80},
+    {baseId:'shampoo', brand:'Sunsilk', price:4.20},
+    {baseId:'detergent', brand:'Surf Excel', price:6.50},
+    {baseId:'detergent', brand:'Ariel', price:6.90},
+    {baseId:'organic-apples', brand:'FreshFarm', price:4.99, size:'1kg'},
+    {baseId:'organic-apples', brand:'NatureFresh', price:7.49, size:'2kg'},
+
+    /* Dairy */
+    {baseId:'milk', brand:'Amul', price:3.80},
+    {baseId:'milk', brand:'Mother Dairy', price:3.70},
+    {baseId:'milk', brand:'Heritage', price:3.60},
+    {baseId:'milk', brand:'Nandini', price:3.40},
+    {baseId:'butter', brand:'Amul', price:4.40},
+    {baseId:'butter', brand:'Britannia', price:4.60},
+
+    /* Produce */
+    {baseId:'apples', brand:'Fresho', price:0.85},
+    {baseId:'apples', brand:'Nature Fresh', price:0.90},
+    {baseId:'bananas', brand:'Fresho', price:0.45},
+
+    /* Bakery */
+    {baseId:'bread', brand:'Britannia', price:3.20},
+    {baseId:'bread', brand:'Modern', price:2.90},
+    {baseId:'bread', brand:'Harvest Gold', price:3.50},
+
+    /* Pantry */
+    {baseId:'rice', brand:'Daawat', price:3.80},
+    {baseId:'atta', brand:'Tata Sampann', price:3.40},
+    {baseId:'dal', brand:'Tata Sampann', price:2.90},
+
+    /* Snacks */
+    {baseId:'chips', brand:'Bingo', price:3.00},
+    {baseId:'biscuits', brand:'Sunfeast', price:1.70},
+
+    /* Beverages */
+    {baseId:'coffee', brand:'Tata Coffee', price:8.50},
+    {baseId:'tea', brand:'Wagh Bakri', price:3.10},
+    {baseId:'water', brand:'Bisleri', price:1.20},
+    {baseId:'water', brand:'Aquafina', price:1.30},
+
+    /* Personal care */
+    {baseId:'soap', brand:'Pears', price:2.80},
+    {baseId:'soap', brand:'Nivea', price:3.10},
+    {baseId:'deodorant', brand:'Fogg', price:4.20},
+    {baseId:'deodorant', brand:'Nivea', price:3.90},
+
+    /* Household */
+    {baseId:'detergent', brand:'Tide', price:6.20},
+    {baseId:'dishwash', brand:'Vim', price:2.10},
+    {baseId:'dishwash', brand:'Pril', price:2.40},
+    {baseId:'paper-towels', brand:'Origami', price:7.20}
+  ];
+
+  BRAND_VARIANTS.forEach(function(bv){
+    var base = null;
+    for(var i=0;i<CATALOG.length;i++){ if(CATALOG[i].id===bv.baseId){ base=CATALOG[i]; break; } }
+    if(!base) return;
+    var brandLower = bv.brand.toLowerCase();
+    /* Avoids "Tata Coffee Coffee" — if the brand name already contains
+       the generic item name (as "Tata Coffee" contains "Coffee"), the
+       brand name alone is the display name. */
+    var displayName = brandLower.indexOf(base.name.toLowerCase())!==-1 ? bv.brand : (bv.brand + ' ' + base.name);
+    /* Combine the brand with EVERY base alias, not just the first —
+       otherwise a phrasing that matches the base item's second alias
+       ("dishwash") but not its first ("dish soap") never forms a valid
+       combined alias, and the shorter bare-brand alias loses the
+       longest-match tiebreak to the generic product's own longer alias. */
+    var aliases = [brandLower];
+    base.aliases.forEach(function(a){ aliases.push(brandLower + ' ' + a); });
+    CATALOG.push({
+      id: bv.baseId + '-' + brandLower.replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''),
+      name: displayName,
+      category: base.category,
+      subcategory: base.subcategory,
+      price: bv.price,
+      sizes: base.sizes,
+      brand: bv.brand,
+      baseId: bv.baseId,
+      defaultSize: bv.size || base.defaultSize,
+      aliases: aliases
+    });
+  });
+
+  function resolveBaseId(id){
+    var p = findById(id);
+    return (p && p.baseId) ? p.baseId : id;
+  }
+
+  /* Items commonly bought together — drives suggestions that actually
+     react to what's in the cart right now, rather than only a fixed
+     simulated-history list. Keyed by base item id so it works the same
+     whether the cart has the generic product or any branded variant
+     (e.g. "Nescafé Coffee" still triggers the coffee -> sugar pairing). */
+  var COMPLEMENTS = {
+    milk: ['cereal','oats'],
+    bread: ['butter','jam','honey'],
+    pasta: ['ketchup','cheese'],
+    rice: ['dal','ghee'],
+    tea: ['sugar'],
+    coffee: ['sugar','milk'],
+    eggs: ['bread','butter'],
+    atta: ['oil','ghee'],
+    chips: ['ketchup'],
+    noodles: ['ketchup'],
+    biscuits: ['tea','coffee'],
+    curd: ['rice'],
+    onion: ['tomato'],
+    tomato: ['onion'],
+    potato: ['onion'],
+    toothpaste: ['soap'],
+    cereal: ['milk']
+  };
+
+  /* Simulated purchase history, used to power "running low" suggestions. */
+  var HISTORY = [
+    {id:'bread', intervalDays:7, daysSinceLast:8},
+    {id:'milk', intervalDays:7, daysSinceLast:2},
+    {id:'coffee', intervalDays:14, daysSinceLast:19},
+    {id:'paper-towels', intervalDays:21, daysSinceLast:25},
+    {id:'eggs', intervalDays:10, daysSinceLast:12},
+    {id:'rice', intervalDays:30, daysSinceLast:34},
+    {id:'sugar', intervalDays:21, daysSinceLast:23},
+    {id:'onion', intervalDays:10, daysSinceLast:15},
+    {id:'toothpaste', intervalDays:45, daysSinceLast:50},
+    {id:'tea', intervalDays:14, daysSinceLast:16}
+  ];
+
+  /* Fallback tier so the rail never sits empty just because the simulated
+     history/season pool ran out — a few sensible staples to reach for. */
+  var POPULAR_FALLBACK = ['milk','bread','eggs','bananas','onion','tomato','rice','water'];
+
+  var CATEGORY_ORDER = ['Dairy','Produce','Bakery','Pantry','Snacks','Beverages','Personal care','Household','Other'];
+
+  function currentSeason(){
+    var m = new Date().getMonth(); // 0-11
+    if(m>=2 && m<=4) return 'spring';
+    if(m>=5 && m<=7) return 'summer';
+    if(m>=8 && m<=10) return 'fall';
+    return 'winter';
+  }
+
+  function findById(id){
+    for(var i=0;i<CATALOG.length;i++){ if(CATALOG[i].id===id) return CATALOG[i]; }
+    return null;
+  }
+
+  /* Small edit-distance calculator, used only as a last-resort fallback
+     when no exact/substring alias match exists — catches ASR mishearings,
+     typos, and inflected forms we didn't think to list explicitly. */
+  function levenshtein(a, b){
+    if(a===b) return 0;
+    if(a.length===0) return b.length;
+    if(b.length===0) return a.length;
+    var prev = [];
+    for(var j=0;j<=b.length;j++) prev[j]=j;
+    for(var i=1;i<=a.length;i++){
+      var cur=[i];
+      for(var j=1;j<=b.length;j++){
+        cur[j] = a[i-1]===b[j-1] ? prev[j-1] : 1+Math.min(prev[j-1],prev[j],cur[j-1]);
+      }
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+
+  /* Word-boundary-safe containment check. Plain indexOf() would let a
+     short alias like "tel" (Hindi for oil) match inside the middle of
+     an unrelated word like "completely" — this only counts a match
+     when the alias lines up with actual token boundaries in the
+     (already space-normalized) text, in either direction. */
+  function wordBoundaryContains(haystack, needle){
+    if(needle.indexOf(' ')===-1){
+      return haystack.split(' ').indexOf(needle)!==-1;
+    }
+    return (' '+haystack+' ').indexOf(' '+needle+' ')!==-1;
+  }
+
+  /* Fuzzy-ish alias match: exact alias, then substring, then edit-distance
+     on individual words, then no match. Both sides run through
+     normalizeText so invisible ASR artifacts (zero-width joiners etc,
+     common in transcribed Indic scripts) never cause a real match to be
+     missed. */
+  function findInCatalog(phrase){
+    var q = normalizeText(phrase.trim().toLowerCase());
+    if(!q) return null;
+    var exact = CATALOG.filter(function(p){
+      return p.aliases.some(function(a){ return normalizeText(a)===q; });
+    });
+    if(exact.length) return exact[0];
+    var partial = [];
+    CATALOG.forEach(function(p){
+      var matchLen = 0;
+      p.aliases.forEach(function(a){
+        var na = normalizeText(a);
+        if(na.length>0 && (wordBoundaryContains(q, na) || wordBoundaryContains(na, q))){
+          if(na.length>matchLen) matchLen = na.length;
+        }
+      });
+      if(matchLen>0) partial.push({product:p, matchLen:matchLen});
+    });
+    /* Prefer the longest matched alias — this is what lets "lays chips"
+       resolve to the Lays SKU instead of the generic "chips" entry, since
+       the matched alias itself ("lays chips") is longer and more specific
+       than "chips" even though the generic product also matches. */
+    partial.sort(function(a,b){ return b.matchLen - a.matchLen; });
+    if(partial.length) return partial[0].product;
+
+    /* Fuzzy fallback: compare each word in the utterance against each
+       catalog alias by edit distance. Tolerance scales with word length
+       so short words stay strict (avoids "tea" matching everything)
+       while longer words tolerate a couple of ASR/typo slips.
+       Filler/function words and known trigger words are excluded first —
+       otherwise a common word like "some" can end up an accidental
+       near-match for a short product name like "apple". */
+    var stop = getStopwords();
+    var words = q.split(' ').filter(function(w){ return w.length>=3 && !stop[w]; });
+    var best = null, bestDist = Infinity;
+    words.forEach(function(w){
+      CATALOG.forEach(function(p){
+        p.aliases.forEach(function(a){
+          var na = normalizeText(a);
+          if(na.length<3) return;
+          var tolerance = na.length<=4 ? 1 : (na.length<=7 ? 2 : 3);
+          var d = levenshtein(w, na);
+          if(d<=tolerance && d<bestDist){ bestDist=d; best=p; }
+        });
+      });
+    });
+    return best;
+  }
+
+  var STOPWORDS_CACHE = null;
+  function getStopwords(){
+    if(STOPWORDS_CACHE) return STOPWORDS_CACHE;
+    var words = ['some','any','a','an','the','item','items','thing','things','stuff','something','anything',
+                 'for','to','and','with','in','on','at','is','are','was','were','of','my','list','please',
+                 'can','you','could','would','should','me','i','we','it','this','that','there','please',
+                 'kuch','कुछ','chij','चीज़','koddi','కొంత','edo','ఏదో','algo','quelque','quelquechose'];
+    [].concat(TRIGGERS.add, TRIGGERS.remove, TRIGGERS.search, TRIGGERS.modify).forEach(function(phrase){
+      phrase.split(' ').forEach(function(w){ if(w) words.push(w); });
+    });
+    Object.keys(QTY_WORDS).forEach(function(w){ words.push(w); });
+    var set = {};
+    words.forEach(function(w){ set[w.toLowerCase()] = true; });
+    STOPWORDS_CACHE = set;
+    return set;
+  }
+
+  /* ===================== NLP command parsing ===================== */
+
+  /* Order-independent keyword scan: rather than anchoring a regex to the
+     start of the sentence (which breaks on "hey, add milk" or on
+     verb-final languages like Hindi/Telugu — "doodh chahiye" = "milk
+     is needed"), we scan the whole utterance for trigger phrases in any
+     position, in any of these languages, and separately scan for a
+     catalog item anywhere in the sentence. Order never matters. */
+  var TRIGGERS = {
+    remove: ['remove','delete','take off','get rid of','cross off',"don't need",'dont need','no longer need',
+             /* Hindi: हटा/hata covers हटाओ, हटा दो, हटा दीजिए, हटाइए, हटा दीजिये;
+                निकाल/nikaal covers निकालो, निकाल दो, निकालिए, निकाल दीजिए */
+             'hata','हटा','nikaal','निकाल',
+             /* Telugu: తీసే/teese covers తీసేయు, తీసేయండి, తీసేయాలి;
+                తీసివే/teesive covers తీసివేయు, తీసివేయండి */
+             'teese','తీసే','teesive','తీసివే','vaddu','వద్దు',
+             'quita','elimina','borra','no necesito',
+             "enlève",'enleve','supprime','retire'],
+    search: ['find','search','look for','show me','where can i','suggest','recommend','suggest me','recommend me',
+             'dhoondo','ढूंढो','khojo','खोजो','sujhao','सुझाओ','सुझाइए','batao','बताओ','dikhao','दिखाओ','दिखाइए',
+             'vethuku','వెతుకు','వెతకు','cheppu','చెప్పు','సూచించు','choopinchu','చూపించు',
+             'busca','encuentra','sugiere','recomienda',
+             'cherche','trouve','suggère','recommande'],
+    add:    ['add','need','want to buy','i want','i need','buy','get me',"don't forget",'dont forget',
+             'grab','pick up',"i'll take",'we need','put',
+             'mujhe','मुझे','chahiye','चाहिए','jod','जोड़','khareed','खरीद','lena','लेना','le lo','ले लो','le aana','ले आना','laao','लाओ',
+             'kavali','కావాలి','koneali','కొనాలి','teesuko','తీసుకో',
+             'necesito','agrega','añade','anade','quiero comprar','compra',
+             "j'ai besoin",'ajoute','achète','achete','mets'],
+    modify: ['change','update','make it','set',
+             'badal','बदल','kar do','कर दो',
+             'marchu','మార్చు','marustunna','మార్చండి',
+             'cambia','modifica',
+             'change','modifie']
+  };
+
+  /* Superlative selectors — "add the cheapest toothpaste" or "add the
+     most expensive coffee" should pick among ALL brand variants of that
+     item, not just whichever one happens to match first. */
+  var SELECTOR_TRIGGERS = {
+    cheapest: ['cheapest','lowest price','least expensive','cheap one',
+               'सबसे सस्ता','सस्ता वाला','सस्ता',
+               'చౌకైనది','చౌకైన','చౌక','తక్కువ ధర',
+               'más barato','el más barato',
+               'le moins cher'],
+    expensive: ['costliest','most expensive','priciest','highest price','expensive one',
+                'सबसे महंगा','महंगा वाला','महंगा',
+                'ఖరీదైనది','ఖరీదైన','ఎక్కువ ధర',
+                'más caro','el más caro',
+                'le plus cher']
+  };
+
+  /* All catalog entries matching a phrase (not just the single best
+     match) — used for selector/price-target picking, and available for
+     search results, so "toothpaste" surfaces the generic item plus
+     every branded variant. */
+  function findVariants(phrase){
+    var q = normalizeText(phrase.trim().toLowerCase());
+    if(!q) return [];
+    return CATALOG.filter(function(p){
+      return p.aliases.some(function(a){
+        var na = normalizeText(a);
+        return na.length>0 && (wordBoundaryContains(q, na) || wordBoundaryContains(na, q));
+      });
+    });
+  }
+
+  /* Brand names without a dedicated catalog SKU are treated as noise and
+     stripped before matching, so "add Tata toothpaste" still resolves to
+     the generic item. Brands that DO have a specific product (Colgate,
+     Sensodyne, Nescafé, Lays) are matched directly instead — see
+     findInCatalog's brand-aware pass in parseCommand. */
+  var BRAND_NOISE = ['pepsodent','dove','lifebuoy','tata','amul','nestle',
+                      'britannia','parle','maggi','pringles','coca cola','pepsi'];
+
+  var FILLER = /\b(please|for me|to my list|from my list|on my list|my list|to the list|hey|okay|ok)\b/gi;
+  var QTY_WORDS = {
+    one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,a:1,an:1,couple:2,
+    /* Hindi — Latin transliteration (multiple common spellings) + Devanagari */
+    ek:1,do:2,teen:3,char:4,chaar:4,paanch:5,panch:5,
+    '\u090f\u0915':1,'\u0926\u094b':2,'\u0924\u0940\u0928':3,'\u091a\u093e\u0930':4,'\u092a\u093e\u0902\u091a':5,'\u092a\u093e\u0902\u091a\u0947':5,
+    /* Telugu — Latin transliteration (multiple common spellings) + Telugu script */
+    okati:1,oka:1,rendu:2,rendhu:2,moodu:3,mudu:3,moodhu:3,nalugu:4,naalugu:4,aidu:5,aidhu:5,ayidu:5,
+    '\u0c12\u0c15\u0c1f\u0c3f':1,'\u0c12\u0c15':1,'\u0c30\u0c46\u0c02\u0c21\u0c41':2,'\u0c2e\u0c42\u0c21\u0c41':3,'\u0c28\u0c3e\u0c32\u0c41\u0c17\u0c41':4,'\u0c10\u0c26\u0c41':5,
+    /* Spanish / French */
+    uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,
+    un:1,une:1,deux:2,trois:3,quatre:4,cinq:5
+  };
+
+  var CATEGORY_QUERIES = {
+    Fruit: ['fruits','fruit','फल','फलों','పండ్లు','పండు','frutas','fruta'],
+    Vegetable: ['vegetables','vegetable','veggies','सब्जी','सब्जियां','सब्ज़ियां','కూరగాయలు','కూరగాయ','verduras','légumes','legumes']
+  };
+
+  function detectCategoryQuery(text){
+    for(var cat in CATEGORY_QUERIES){
+      if(containsAny(text, CATEGORY_QUERIES[cat])) return cat;
+    }
+    return null;
+  }
+
+  function containsAny(text, phrases){
+    for(var i=0;i<phrases.length;i++){ if(text.indexOf(phrases[i])!==-1) return true; }
+    return false;
+  }
+
+  /* Size is a distinct concept from quantity (count) — "1 liter milk" is
+     one unit sized 1L, not a count of 1. Extracted and stripped from the
+     text before quantity/item parsing runs, so its number is never
+     mistaken for an item count. */
+  var SIZE_UNIT_MAP = {
+    ml:'ml','मिली':'ml','మిల్లీ':'ml','mililitros':'ml',
+    l:'L', liter:'L', litre:'L', liters:'L', litres:'L','लीटर':'L','లీటర్':'L','litro':'L','litros':'L',
+    kg:'kg', kilo:'kg', kilos:'kg', kilogram:'kg', kilograms:'kg','किलो':'kg','కిలో':'kg',
+    g:'g', gram:'g', grams:'g','ग्राम':'g','గ్రాము':'g','gramo':'g','gramos':'g',
+    dozen:'dozen', dozens:'dozen'
+  };
+  var SIZE_UNIT_PATTERN = Object.keys(SIZE_UNIT_MAP).sort(function(a,b){return b.length-a.length;}).join('|');
+  var SIZE_RE = new RegExp('(\\d+(?:\\.\\d+)?)\\s*(' + SIZE_UNIT_PATTERN + ')\\b', 'i');
+
+  function extractSize(text){
+    var m = text.match(SIZE_RE);
+    if(!m) return null;
+    var value = parseFloat(m[1]);
+    var unit = SIZE_UNIT_MAP[m[2].toLowerCase()] || m[2];
+    var displayValue = value % 1 === 0 ? value : value;
+    return {value: value, unit: unit, label: displayValue + unit, matchText: m[0]};
+  }
+
+  /* Token-based, not regex \b — JavaScript's \b word-boundary is defined
+     via \w, which only covers ASCII letters/digits. It silently fails to
+     match at the edges of Devanagari or Telugu words entirely, which
+     would make every non-Latin-script number word in QTY_WORDS
+     unreachable. Splitting on the already-normalized single spaces sidesteps
+     the problem for any script. */
+  function extractQty(text){
+    var m = text.match(/\b(\d+)\b/);
+    if(m) return {qty: parseInt(m[1],10), rest: text.replace(m[0],'').trim()};
+    var tokens = text.split(' ');
+    for(var i=0;i<tokens.length;i++){
+      if(QTY_WORDS.hasOwnProperty(tokens[i])){
+        var rest = tokens.slice(0,i).concat(tokens.slice(i+1)).join(' ').trim();
+        return {qty: QTY_WORDS[tokens[i]], rest: rest};
+      }
+    }
+    return {qty:1, rest:text};
+  }
+
+  /* Returns null when no quantity word/digit is present at all, as
+     opposed to extractQty which defaults to 1 — needed so "remove one
+     apple" (take away 1) can be told apart from "remove milk" (take away
+     all of it). */
+  function tryExtractQty(text){
+    var m = text.match(/\b(\d+)\b/);
+    if(m) return parseInt(m[1],10);
+    var tokens = text.split(' ');
+    for(var i=0;i<tokens.length;i++){
+      if(QTY_WORDS.hasOwnProperty(tokens[i])) return QTY_WORDS[tokens[i]];
+    }
+    return null;
+  }
+
+  function stripUnits(text){
+    return text.replace(/\b(bottles?|cans?|bags?|boxes?|packs?|of)\b/gi,'').replace(/\s+/g,' ').trim();
+  }
+
+  function stripTriggers(text){
+    var all = TRIGGERS.remove.concat(TRIGGERS.search, TRIGGERS.add, TRIGGERS.modify);
+    var out = text;
+    all.forEach(function(phrase){ out = out.split(phrase).join(' '); });
+    return out.replace(/\s+/g,' ').trim();
+  }
+
+  function stripBrands(text){
+    var out = text;
+    BRAND_NOISE.forEach(function(b){ out = out.split(b).join(' '); });
+    return out.replace(/\s+/g,' ').trim();
+  }
+
+  function normalizeText(text){
+    return text
+      .normalize('NFC')
+      .replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g,'') /* zero-width joiners/marks common in ASR output for Indic scripts */
+      .replace(/[।॥,]/g,' ')                              /* Devanagari punctuation */
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+
+  function parseCommand(raw){
+    var text0 = normalizeText(raw.toLowerCase()).replace(FILLER,' ').replace(/[.?!]/g,'').replace(/\s+/g,' ').trim();
+    if(!text0) return {intent:'unknown'};
+
+    /* Pull size out first — otherwise "1 liter milk" would have its "1"
+       mistaken for an item-count quantity rather than a size. */
+    var sizeInfo = extractSize(text0);
+    var text = sizeInfo ? text0.split(sizeInfo.matchText).join(' ').replace(/\s+/g,' ').trim() : text0;
+
+    /* Try matching with any brand name still in place first — this is
+       what lets "colgate toothpaste" resolve to the specific Colgate SKU
+       rather than the generic one. Only fall back to stripping unlisted
+       brand noise (e.g. "Tata toothpaste", no dedicated SKU) if that
+       direct match comes up empty. */
+    var catalogHit = findInCatalog(text) || findInCatalog(stripBrands(text));
+
+    /* Price filter works alongside a search trigger in any language. */
+    var priceMatch = text.match(/under\s*\$?\s*(\d+(?:\.\d+)?)/);
+
+    /* Modify only fires when there's both a modify-style trigger AND a
+       number present — otherwise "change" alone is too ambiguous and we'd
+       rather fall through to add/remove than misfire. */
+    var modifyQtyMatch = text.match(/\b(\d+)\b/);
+    if(containsAny(text, TRIGGERS.modify) && modifyQtyMatch && catalogHit){
+      return {intent:'modify', item: catalogHit.name.toLowerCase(), qty: parseInt(modifyQtyMatch[1],10), size: sizeInfo ? sizeInfo.label : null};
+    }
+
+    /* Category-level query ("find me fruits", "फल दिखाओ") is checked
+       ahead of remove/add — unambiguous enough to win even if the
+       sentence also contains an add-style word ("मुझे") that would
+       otherwise be checked first. */
+    var categoryHit = detectCategoryQuery(text);
+    if(categoryHit && !containsAny(text, TRIGGERS.remove)){
+      var catOut = {intent:'search', category: categoryHit, item: categoryHit.toLowerCase() + 's'};
+      if(priceMatch) catOut.maxPrice = parseFloat(priceMatch[1]);
+      return catOut;
+    }
+
+    if(containsAny(text, TRIGGERS.remove)){
+      var removeQty = tryExtractQty(text);
+      var removeItem = catalogHit ? catalogHit.name : stripUnits(stripTriggers(text)).replace(/\b\d+\b/g,'').trim();
+      return {intent:'remove', item: removeItem.toLowerCase(), qty: removeQty, size: sizeInfo ? sizeInfo.label : null};
+    }
+
+    if(containsAny(text, TRIGGERS.search) || priceMatch){
+      var searchItem = catalogHit ? catalogHit.name : stripUnits(stripTriggers(text));
+      var out = {intent:'search', item: searchItem.toLowerCase()};
+      if(priceMatch) out.maxPrice = parseFloat(priceMatch[1]);
+      return out;
+    }
+
+    if(containsAny(text, TRIGGERS.add) || catalogHit){
+      /* "add the cheapest toothpaste" / "add the most expensive coffee" —
+         detected as a selector rather than resolved to a single product,
+         since the actual choice depends on comparing every brand variant. */
+      var selector = null;
+      if(containsAny(text, SELECTOR_TRIGGERS.cheapest)) selector = 'cheapest';
+      else if(containsAny(text, SELECTOR_TRIGGERS.expensive)) selector = 'expensive';
+
+      /* "add toothpaste for $4" / "add a $4 toothpaste" — a specific
+         target price, distinct from search's "under $X" (which requires
+         the word "under" and is handled above). Stripped from the text
+         before quantity parsing so "$4" is never misread as a count. */
+      var addPriceMatch = text.match(/\$\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*dollars?\b/);
+      var targetPrice = null;
+      var textForQty = text;
+      if(addPriceMatch){
+        targetPrice = parseFloat(addPriceMatch[1] || addPriceMatch[2]);
+        textForQty = text.split(addPriceMatch[0]).join(' ').replace(/\s+/g,' ').trim();
+      }
+
+      var q = extractQty(textForQty);
+      var addItem = catalogHit ? catalogHit.name.toLowerCase() : stripUnits(stripTriggers(q.rest));
+      var out = {intent:'add', item: addItem, qty:q.qty, size: sizeInfo ? sizeInfo.label : null};
+      if(selector) out.selector = selector;
+      if(targetPrice!=null) out.targetPrice = targetPrice;
+      return out;
+    }
+
+    /* Short bare utterance with no recognized trigger or item, e.g. a
+       one-off word — still worth attempting to add rather than rejecting
+       outright (handleAdd will reject it cleanly if it's not a real item). */
+    if(text.split(' ').length <= 3){
+      var q2 = extractQty(text);
+      return {intent:'add', item: stripUnits(q2.rest).trim(), qty:q2.qty, size: sizeInfo ? sizeInfo.label : null};
+    }
+
+    return {intent:'unknown', raw:text};
+  }
+
+  function capitalize(s){ return s.replace(/\b\w/g, function(c){return c.toUpperCase();}); }
+
+  return {
+    CATALOG: CATALOG,
+    HISTORY: HISTORY,
+    POPULAR_FALLBACK: POPULAR_FALLBACK,
+    CATEGORY_ORDER: CATEGORY_ORDER,
+    TRIGGERS: TRIGGERS,
+    findById: findById,
+    findInCatalog: findInCatalog,
+    parseCommand: parseCommand,
+    capitalize: capitalize,
+    normalizeText: normalizeText,
+    levenshtein: levenshtein,
+    extractSize: extractSize,
+    extractQty: extractQty,
+    tryExtractQty: tryExtractQty,
+    currentSeason: currentSeason,
+    wordBoundaryContains: wordBoundaryContains,
+    resolveBaseId: resolveBaseId,
+    COMPLEMENTS: COMPLEMENTS,
+    findVariants: findVariants,
+    detectCategoryQuery: detectCategoryQuery,
+    CATEGORY_QUERIES: CATEGORY_QUERIES
+  };
+});
+</script>
+<script>
+(function(){
+  "use strict";
+
+  /* Data, catalog matching, and command parsing now live in js/nlp.js —
+     a standalone module with its own test suite (tests/nlp.test.js).
+     Everything below is UI/state/speech-recognition glue that consumes it. */
+  var NLP = window.VoiceShoppingNLP;
+  var CATALOG = NLP.CATALOG;
+  var HISTORY = NLP.HISTORY;
+  var POPULAR_FALLBACK = NLP.POPULAR_FALLBACK;
+  var CATEGORY_ORDER = NLP.CATEGORY_ORDER;
+  var findById = NLP.findById;
+  var findInCatalog = NLP.findInCatalog;
+  var parseCommand = NLP.parseCommand;
+  var capitalize = NLP.capitalize;
+  var currentSeason = NLP.currentSeason;
+  var wordBoundaryContains = NLP.wordBoundaryContains;
+  var resolveBaseId = NLP.resolveBaseId;
+  var COMPLEMENTS = NLP.COMPLEMENTS;
+  var findVariants = NLP.findVariants;
+
+  /* ===================== State ===================== */
+
+  var state = {
+    list: [],          // {id, name, category, qty, size}
+    lastAction: null,
+    searchResults: null,
+    searchLabel: ''
+  };
+
+  /* ===================== Actions ===================== */
+
+  function addToList(product, qty, size){
+    var existing = state.list.find(function(i){ return i.id===product.id && i.size===size; });
+    if(existing){ existing.qty += qty; }
+    else { state.list.push({id:product.id, name:product.name, category:product.category, qty:qty, size: size||null}); }
+  }
+
+  function handleAdd(itemPhrase, qty, size, selector, targetPrice){
+    var product;
+    if(selector || targetPrice!=null){
+      var variants = findVariants(itemPhrase).filter(function(p){ return !p.outOfStock; });
+      if(variants.length===0){
+        setBanner('error', 'Didn\u2019t recognize \u201c' + capitalize(itemPhrase) + '\u201d \u2014 nothing was added.');
+        setCaption('Didn\u2019t recognize that item.', true);
+        render();
+        return;
+      }
+      if(selector==='cheapest'){
+        product = variants.reduce(function(a,b){ return b.price<a.price ? b : a; });
+      } else if(selector==='expensive'){
+        product = variants.reduce(function(a,b){ return b.price>a.price ? b : a; });
+      } else {
+        product = variants.reduce(function(a,b){
+          return Math.abs(b.price-targetPrice) < Math.abs(a.price-targetPrice) ? b : a;
+        });
+      }
+      addToList(product, qty, size);
+      var reason = selector==='cheapest' ? 'cheapest option'
+        : selector==='expensive' ? 'priciest option'
+        : 'closest to $' + targetPrice.toFixed(2);
+      setCaption('Added ' + product.name + ' ($' + product.price.toFixed(2) + ') \u2014 ' + reason + '.', true);
+      clearBanner();
+      render();
+      return;
+    }
+
+    product = findInCatalog(itemPhrase);
+    if(!product){
+      setBanner('error', 'Didn\u2019t recognize \u201c' + capitalize(itemPhrase) + '\u201d \u2014 nothing was added. Try rephrasing, or say "find ' + itemPhrase + '" to search what\u2019s available.');
+      setCaption('Didn\u2019t recognize that item.', true);
+      render();
+      return;
+    }
+    if(product.outOfStock){
+      offerSubstitutes(product);
+      return;
+    }
+    addToList(product, qty, size);
+    var sizeLabel = size ? size + ' ' : '';
+    setCaption('Added ' + (qty>1? qty+' \u00d7 ':'') + sizeLabel + product.name + '.', true);
+    clearBanner();
+    render();
+  }
+
+  function offerSubstitutes(product){
+    var subs = (product.substitutes||[]).map(findById).filter(Boolean);
+    state.searchResults = null;
+    if(subs.length===0){
+      setBanner('error', product.name + ' is out of stock, and no substitute is available right now.');
+      return;
+    }
+    state.searchLabel = product.name + ' is out of stock \u2014 try instead';
+    state.searchResults = subs;
+    setCaption(product.name + ' is out of stock. Here are some substitutes.', true);
+    render();
+  }
+
+  function handleModify(itemPhrase, qty, size){
+    var product = findInCatalog(itemPhrase);
+    var idx = -1;
+    if(product){
+      idx = size
+        ? state.list.findIndex(function(i){ return i.id===product.id && i.size===size; })
+        : state.list.findIndex(function(i){ return i.id===product.id; });
+    }
+    if(idx===-1){
+      setBanner('info', capitalize(itemPhrase) + ' isn\u2019t on your list yet \u2014 adding it instead.');
+      if(product) addToList(product, qty, size);
+      setCaption('Added ' + capitalize(itemPhrase) + '.', true);
+      render();
+      return;
+    }
+    state.list[idx].qty = qty;
+    setCaption('Updated ' + state.list[idx].name + ' to \u00d7' + qty + '.', true);
+    clearBanner();
+    render();
+  }
+
+  function handleRemove(itemPhrase, qty){
+    var product = findInCatalog(itemPhrase);
+    var idx = -1;
+    if(product){ idx = state.list.findIndex(function(i){ return i.id===product.id; }); }
+    if(idx===-1 && itemPhrase){
+      idx = state.list.findIndex(function(i){ return i.name.toLowerCase().indexOf(itemPhrase)!==-1; });
+    }
+    if(idx===-1){
+      setBanner('info', '\u201c' + capitalize(itemPhrase) + '\u201d isn\u2019t on your list.');
+      setCaption('Couldn\u2019t find that on your list.', true);
+      return;
+    }
+    var row = state.list[idx];
+    /* No quantity mentioned ("remove milk") clears the whole line, same
+       as before. A specified quantity ("remove one apple", "remove 2
+       apples") only takes away that many, leaving the rest. */
+    if(qty==null || qty>=row.qty){
+      state.list.splice(idx,1);
+      setCaption('Removed ' + row.name + '.', true);
+    } else {
+      row.qty -= qty;
+      setCaption('Removed ' + qty + ' \u00d7 ' + row.name + ' \u2014 ' + row.qty + ' left.', true);
+    }
+    clearBanner();
+    render();
+  }
+
+  function handleSearch(itemPhrase, maxPrice, category){
+    var results;
+    if(category){
+      /* Category-level search ("find me fruits") returns every item
+         tagged with that subcategory — not name/alias matching at all,
+         so fruits and vegetables never bleed into each other's results
+         even though they share the same top-level "Produce" category. */
+      results = CATALOG.filter(function(p){
+        var catOk = p.subcategory === category;
+        var priceOk = maxPrice==null || p.price <= maxPrice;
+        return catOk && priceOk && !p.outOfStock;
+      });
+    } else {
+      var q = itemPhrase.toLowerCase();
+      results = CATALOG.filter(function(p){
+        var nameMatch = p.aliases.some(function(a){ return wordBoundaryContains(a, q) || wordBoundaryContains(q, a); });
+        var priceOk = maxPrice==null || p.price <= maxPrice;
+        return nameMatch && priceOk;
+      });
+    }
+    state.searchResults = results;
+    var label = category ? category + 's available' : '\u201c' + itemPhrase + '\u201d results';
+    state.searchLabel = label + (maxPrice!=null? ' under $'+maxPrice : '');
+    if(results.length===0){
+      setCaption('No matches for \u201c' + itemPhrase + '\u201d.', true);
+    } else {
+      setCaption('Found ' + results.length + ' match' + (results.length===1?'':'es') + '.', true);
+    }
+    clearBanner();
+    render();
+  }
+
+  function runCommand(raw){
+    if(!raw || !raw.trim()) return;
+    var cmd = parseCommand(raw);
+    if(cmd.intent==='add') handleAdd(cmd.item, cmd.qty, cmd.size, cmd.selector, cmd.targetPrice);
+    else if(cmd.intent==='remove') handleRemove(cmd.item, cmd.qty);
+    else if(cmd.intent==='modify') handleModify(cmd.item, cmd.qty, cmd.size);
+    else if(cmd.intent==='search') handleSearch(cmd.item, cmd.maxPrice, cmd.category);
+    else {
+      setBanner('info', 'Didn\u2019t catch a command in \u201c' + raw + '\u201d. Try "add \u2026", "remove \u2026", or "find \u2026".');
+      setCaption('Not sure what that means \u2014 try rephrasing.', true);
+    }
+  }
+
+  function capitalize(s){ return s.replace(/\b\w/g, function(c){return c.toUpperCase();}); }
+
+  /* ===================== Suggestions engine ===================== */
+
+  function computeSuggestions(){
+    var out = [];
+    var season = currentSeason();
+    var inListIds = state.list.map(function(i){return i.id;});
+    var inListBaseIds = inListIds.map(resolveBaseId);
+
+    /* Pairing suggestions react to what's actually in the cart right now
+       — add pasta, get offered ketchup; add tea, get offered sugar. This
+       is what makes the rail change as you shop instead of only ever
+       showing the same fixed pool. */
+    var seenPairing = {};
+    state.list.forEach(function(item){
+      var baseId = resolveBaseId(item.id);
+      var complements = COMPLEMENTS[baseId] || [];
+      complements.forEach(function(compId){
+        if(inListBaseIds.indexOf(compId)!==-1) return;
+        if(seenPairing[compId]) return;
+        var compProduct = findById(compId);
+        if(!compProduct || compProduct.outOfStock) return;
+        seenPairing[compId] = true;
+        out.push({type:'pairing', product:compProduct, label:'Goes well with ' + item.name.toLowerCase() + ': ' + compProduct.name.toLowerCase()});
+      });
+    });
+
+    /* Substitute suggestions — distinct from pairing. Per the spec's own
+       example ("suggest almond milk if the user mentions regular milk"),
+       this fires proactively whenever an in-stock item with a known
+       substitute is in the cart, not only when something is out of
+       stock (that case is handled separately by offerSubstitutes). */
+    var seenSubstitute = {};
+    state.list.forEach(function(item){
+      var baseId = resolveBaseId(item.id);
+      var baseProduct = findById(baseId);
+      if(!baseProduct || !baseProduct.substitutes) return;
+      baseProduct.substitutes.forEach(function(subId){
+        if(inListBaseIds.indexOf(subId)!==-1) return;
+        if(seenSubstitute[subId]) return;
+        var subProduct = findById(subId);
+        if(!subProduct || subProduct.outOfStock) return;
+        seenSubstitute[subId] = true;
+        out.push({type:'substitute', product:subProduct, label:'Alternative to ' + baseProduct.name.toLowerCase() + ': ' + subProduct.name.toLowerCase()});
+      });
+    });
+
+    /* Sibling-brand alternatives — the hand-curated substitutes list above
+       only covers 2 items (milk, apples), but the catalog has 55+ branded
+       products. Rather than hand-writing a substitute entry for every one,
+       any item in the cart that has OTHER brands of the same base product
+       automatically offers those as alternatives too — Colgate in the
+       cart offers Sensodyne/Pepsodent, any rice brand offers the others,
+       and so on, scaling with the catalog instead of a fixed list. */
+    state.list.forEach(function(item){
+      var baseId = resolveBaseId(item.id);
+      var siblings = CATALOG.filter(function(p){
+        return (p.baseId===baseId || p.id===baseId) && p.id!==item.id && !p.outOfStock;
+      });
+      siblings.sort(function(a,b){ return a.price-b.price; });
+      siblings.slice(0,2).forEach(function(sib){
+        if(inListIds.indexOf(sib.id)!==-1) return;
+        if(seenSubstitute[sib.id]) return;
+        seenSubstitute[sib.id] = true;
+        out.push({type:'substitute', product:sib, label:'Alternative to ' + item.name.toLowerCase() + ': ' + sib.name});
+      });
+    });
+
+    /* Running low, based on simulated purchase history */
+    HISTORY.forEach(function(h){
+      if(h.daysSinceLast >= h.intervalDays && inListIds.indexOf(h.id)===-1 && !seenPairing[h.id]){
+        var p = findById(h.id);
+        if(p) out.push({type:'lowstock', product:p, label:'Running low on ' + p.name.toLowerCase()});
+      }
+    });
+
+    /* Seasonal items not already in the list — combines calendar season
+       AND items flagged on sale, per the spec ("in season OR on sale"),
+       so this pool isn't limited to whatever happens to be in season
+       this exact month. */
+    CATALOG.forEach(function(p){
+      if(inListIds.indexOf(p.id)!==-1 || p.outOfStock || seenPairing[p.id]) return;
+      if(p.season && p.season.indexOf(season)!==-1){
+        out.push({type:'seasonal', product:p, label:p.name + ' is in season'});
+      } else if(p.onSale){
+        out.push({type:'seasonal', product:p, label:p.name + ' is on sale \u2014 $' + p.price.toFixed(2)});
+      }
+    });
+
+    /* Fallback: once the pairing/history/season pools are exhausted
+       (e.g. everything in them is already on the list), still offer a
+       few sensible staples rather than leaving the rail empty. */
+    var shoppingBasedCount = out.filter(function(s){ return s.type==='pairing' || s.type==='lowstock' || s.type==='popular'; }).length;
+    if(shoppingBasedCount < 3){
+      var already = out.map(function(s){return s.product.id;}).concat(inListIds);
+      POPULAR_FALLBACK.forEach(function(id){
+        if(already.indexOf(id)!==-1) return;
+        var p = findById(id);
+        if(p && !p.outOfStock){ out.push({type:'popular', product:p, label:p.name + ' \u2014 a staple worth keeping stocked'}); already.push(id); }
+      });
+    }
+
+    return out;
+  }
+
+  /* ===================== Rendering ===================== */
+
+  function setCaption(text, live){
+    var el = document.getElementById('caption');
+    el.textContent = text;
+    el.classList.toggle('live', !!live);
+  }
+
+  function setBanner(kind, text){
+    document.getElementById('banner').innerHTML =
+      '<div class="banner ' + kind + '" role="status">' + text + '</div>';
+  }
+  function clearBanner(){ document.getElementById('banner').innerHTML=''; }
+
+  function render(){
+    renderList();
+    renderSuggestions();
+    renderSearch();
+  }
+
+  function renderList(){
+    var body = document.getElementById('listBody');
+    if(state.list.length===0){
+      body.innerHTML = '<div class="empty-list">Your list is empty. Tap the mic and say what you need.</div>' +
+        '<div class="receipt-foot">0 items</div>';
+      return;
+    }
+    var byCat = {};
+    state.list.forEach(function(item){
+      (byCat[item.category] = byCat[item.category] || []).push(item);
+    });
+    var html = '';
+    CATEGORY_ORDER.forEach(function(cat){
+      if(!byCat[cat]) return;
+      html += '<div class="category-group"><div class="category-name">' + cat + '</div>';
+      byCat[cat].forEach(function(item){
+        var displayName = item.name + (item.size ? ' (' + item.size + ')' : '');
+        var rowKey = item.id + '::' + (item.size||'');
+        html += '<div class="item-row">' +
+          '<span class="item-name">' + escapeHtml(displayName) + '</span>' +
+          '<span class="item-qty">\u00d7' + item.qty + '</span>' +
+          '<button class="item-remove" aria-label="Remove ' + escapeHtml(displayName) + '" data-remove-key="' + escapeHtml(rowKey) + '">\u2715</button>' +
+          '</div>';
+      });
+      html += '</div>';
+    });
+    body.innerHTML = html;
+    var total = state.list.reduce(function(s,i){return s+i.qty;},0);
+    body.innerHTML += '<div class="receipt-foot">' + total + ' item' + (total===1?'':'s') + ' \u00b7 ' + Object.keys(byCat).length + ' categories</div>';
+
+    body.querySelectorAll('[data-remove-key]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var key = btn.getAttribute('data-remove-key');
+        state.list = state.list.filter(function(i){ return (i.id+'::'+(i.size||'')) !== key; });
+        render();
+      });
+    });
+  }
+
+  function renderSuggestions(){
+    var suggestions = computeSuggestions();
+    var groups = {
+      shopping: {el: document.getElementById('suggestionsShopping'), wrap: document.getElementById('groupShopping'), items: []},
+      seasonal: {el: document.getElementById('suggestionsSeasonal'), wrap: document.getElementById('groupSeasonal'), items: []},
+      alternative: {el: document.getElementById('suggestionsAlternative'), wrap: document.getElementById('groupAlternative'), items: []}
+    };
+    suggestions.forEach(function(s){
+      if(s.type==='seasonal') groups.seasonal.items.push(s);
+      else if(s.type==='substitute') groups.alternative.items.push(s);
+      else groups.shopping.items.push(s); /* pairing, lowstock, popular */
+    });
+
+    var anyVisible = false;
+    Object.keys(groups).forEach(function(key){
+      var g = groups[key];
+      var capped = g.items.slice(0,4);
+      if(capped.length===0){ g.wrap.hidden = true; g.el.innerHTML = ''; return; }
+      anyVisible = true;
+      g.wrap.hidden = false;
+      g.el.innerHTML = capped.map(function(s,idx){
+        return '<button class="chip ' + s.type + '" data-group="' + key + '" data-suggest-idx="' + idx + '">' +
+          '<span class="dot" aria-hidden="true"></span>' + escapeHtml(s.label) + '</button>';
+      }).join('');
+      g.el.querySelectorAll('[data-suggest-idx]').forEach(function(btn){
+        var idx = parseInt(btn.getAttribute('data-suggest-idx'),10);
+        btn.addEventListener('click', function(){
+          var s = capped[idx];
+          addToList(s.product, 1);
+          setCaption('Added ' + s.product.name + ' from suggestions.', true);
+          render();
+        });
+      });
+    });
+
+    document.getElementById('suggestionsEmpty').hidden = anyVisible;
+  }
+
+  function renderSearch(){
+    var panel = document.getElementById('searchPanel');
+    if(!state.searchResults){ panel.innerHTML=''; return; }
+    var rows = state.searchResults.map(function(p){
+      var metaParts = [];
+      if(p.brand) metaParts.push('Brand: ' + p.brand);
+      if(!p.sizes && p.defaultSize) metaParts.push('Size: ' + p.defaultSize);
+      metaParts.push('$' + p.price.toFixed(2));
+      var sizesLine = p.sizes ? '<div class="result-meta">Sizes: ' + escapeHtml(p.sizes.join(', ')) + '</div>' : '';
+      return '<div class="result-row"><div><div>' + escapeHtml(p.name) + '</div>' +
+        '<div class="result-meta">' + escapeHtml(metaParts.join(' \u00b7 ')) + '</div>' + sizesLine + '</div>' +
+        '<button data-add-id="' + p.id + '">Add</button></div>';
+    }).join('');
+    var countLine = '<div class="result-count">Showing ' + state.searchResults.length +
+      ' result' + (state.searchResults.length===1?'':'s') + '</div>';
+    if(state.searchResults.length===0){
+      rows = '<div class="result-row"><span class="result-meta">No items matched.</span></div>';
+      countLine = '';
+    }
+    panel.innerHTML = '<div class="search-panel">' +
+      '<div class="search-panel-head"><h3>\ud83d\udd0e ' + escapeHtml(state.searchLabel) + '</h3>' +
+      '<button data-close-search>Close</button></div>' + rows + countLine + '</div>';
+    panel.querySelectorAll('[data-add-id]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var p = findById(btn.getAttribute('data-add-id'));
+        addToList(p,1);
+        setCaption('Added ' + p.name + '.', true);
+        state.searchResults = null;
+        render();
+      });
+    });
+    panel.querySelector('[data-close-search]').addEventListener('click', function(){
+      state.searchResults = null;
+      render();
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  /* ===================== Speech recognition ===================== */
+
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var recognition = null;
+  var listening = false;
+
+  function initRecognition(){
+    if(!SpeechRecognition){
+      setBanner('error', 'Voice recognition isn\u2019t supported in this browser. Use the text box below instead.');
+      return null;
+    }
+    var r = new SpeechRecognition();
+    r.continuous = false;
+    r.interimResults = true;
+    r.maxAlternatives = 1;
+
+    r.onstart = function(){
+      listening = true;
+      updateMicUI();
+      setCaption('Listening\u2026', true);
+      clearBanner();
+    };
+    r.onresult = function(e){
+      var transcript = '';
+      for(var i=e.resultIndex;i<e.results.length;i++){
+        transcript += e.results[i][0].transcript;
+      }
+      setCaption('\u201c' + transcript + '\u201d', true);
+      if(e.results[e.results.length-1].isFinal){
+        setCaption('Processing \u201c' + transcript.trim() + '\u201d\u2026', true);
+        setTimeout(function(){ runCommand(transcript); }, 300);
+      }
+    };
+    r.onerror = function(e){
+      listening = false;
+      updateMicUI();
+      if(e.error === 'not-allowed' || e.error === 'permission-denied'){
+        setBanner('error', 'Microphone access was denied. Allow it in your browser settings, or type a command below.');
+      } else if(e.error === 'no-speech'){
+        setCaption('Didn\u2019t hear anything \u2014 try again.', true);
+      } else {
+        setBanner('error', 'Voice recognition hit an error (' + e.error + '). Try again or type a command.');
+      }
+    };
+    r.onend = function(){
+      listening = false;
+      updateMicUI();
+    };
+    return r;
+  }
+
+  function updateMicUI(){
+    var btn = document.getElementById('micBtn');
+    btn.classList.toggle('listening', listening);
+    btn.setAttribute('aria-pressed', String(listening));
+    btn.setAttribute('aria-label', listening ? 'Stop voice command' : 'Start voice command');
+  }
+
+  document.getElementById('micBtn').addEventListener('click', function(){
+    if(!recognition){ recognition = initRecognition(); if(!recognition) return; }
+    if(listening){ recognition.stop(); return; }
+    try{
+      recognition.lang = document.getElementById('lang').value;
+      recognition.start();
+    }catch(err){
+      setBanner('error', 'Couldn\u2019t start the microphone. Try again in a moment.');
+    }
+  });
+
+  document.getElementById('fallbackForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var input = document.getElementById('fallbackInput');
+    if(!input.value.trim()) return;
+    runCommand(input.value);
+    input.value = '';
+  });
+
+  /* ===================== Init ===================== */
+
+  if(!SpeechRecognition){
+    setBanner('error', 'Voice recognition isn\u2019t supported in this browser. Use the text box below instead.');
+  }
+  render();
+})();
+</script>
+</body>
+</html>
